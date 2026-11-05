@@ -1,43 +1,37 @@
 # Drehbuch Live-Demo (5 Minuten)
 
-## Vorbereitung (am Vortag / 15 Min vor dem Vortrag)
+Alles läuft im Browser auf github.com – kein Terminal nötig.
 
-- [ ] Repo ist gepusht, letzter Lauf auf `main` ist **grün**, Images liegen unter *Packages*
-- [ ] Secret `DEMO_API_KEY` und Variable `DEPLOY_TARGET` sind angelegt
-- [ ] Branch `demo/kaputter-test` vorbereitet (siehe unten), **noch nicht** als PR geöffnet
-- [ ] Browser-Tabs offen: ① Repo-Startseite ② `ci.yml` ③ Actions-Tab ④ Packages
-- [ ] Browser-Zoom auf 125–150 %, Benachrichtigungen aus, im GitHub-Account eingeloggt
-- [ ] Backup: Screenshots eines roten und eines grünen Laufs im Ordner `backup/`
+## Am Vortag
 
-### Branch mit absichtlich kaputtem Test vorbereiten
+- [ ] **Backup-PR:** `frontend/src/tasks.ts` öffnen → Stift → in `trimmed.length <= 80` die `80` durch `8` ersetzen → *Commit changes…* → „Create a new branch“ `demo-backup` → *Propose changes* → *Create pull request*. Warten, bis der Frontend-Check rot ist. PR offen lassen.
+- [ ] Secrets-Demo einmal starten (Actions → Secrets-Demo → Run workflow).
+- [ ] Letzter Lauf auf `main` ist grün, unter *Packages* liegen zwei Images.
+- [ ] Screenshots machen: roter PR, rotes Log, `***` im Log, Packages.
 
-```bash
-git switch -c demo/kaputter-test
-# in frontend/src/tasks.ts: Grenze von 80 auf 8 Zeichen ändern
-#   return trimmed.length > 0 && trimmed.length <= 8
-git commit -am "feat: kürzere Titel erlauben"
-git push -u origin demo/kaputter-test
-git switch main
-```
+## 10 Minuten vorher
+
+- [ ] Eingeloggt, Browser-Zoom 125–150 %, Benachrichtigungen aus
+- [ ] Tab 1: Repo · Tab 2: Backup-PR · Tab 3: Actions
 
 ## Ablauf
 
-| Zeit | Was du zeigst | Was du sagst |
+| Zeit | Aktion | Satz |
 |---|---|---|
-| 0:00 | Tab ① → „Compare & pull request" für `demo/kaputter-test` → PR öffnen | „Eine Kollegin ändert die Titel-Regel und öffnet einen Pull Request. Achtet darauf, was unten im PR passiert." |
-| 0:30 | Tab ② `ci.yml` kurz durchscrollen | „Das ist genau der Workflow von der Folie: drei Jobs, Frontend als Matrix, Docker nur auf main." |
-| 1:15 | Zurück zum PR → Checks laufen, auf **Details** klicken → Workflow-Graph | „Frontend und Backend laufen parallel auf eigenen VMs, die Matrix erzeugt zwei Frontend-Jobs." |
-| 2:00 | Frontend-Job wird **rot** → Step „Unit-Tests" aufklappen | „Vitest meldet: ‚CI-Pipeline bauen' ist plötzlich ungültig. Der Fehler wird gefunden, bevor er in main landet." |
-| 2:45 | Im PR: „Merge" ist durch Branch Protection gesperrt (falls aktiviert) | „Ohne grüne Checks kein Merge – die Qualitätsregel ist automatisiert." |
-| 3:00 | Tab ③ → *Secrets-Demo* → **Run workflow** → Name eingeben → Lauf öffnen | „Zweites Thema: Secrets." |
-| 3:45 | Log zeigt `Versuch, das Secret auszugeben: ***`, danach Summary-Tabelle | „Der Wert ist im Runner vorhanden, im Log wird er aber automatisch maskiert." |
-| 4:15 | Tab ④ Packages → Image `…-backend` mit Tag `sha-…` | „Auf main entsteht automatisch ein Docker-Image, angemeldet nur mit dem GITHUB_TOKEN." |
-| 4:45 | Zurück zu den Folien | „Damit zurück zum Fazit." |
+| 0:00 | Repo zeigen, `.github/workflows/ci.yml` öffnen | „Das ist die Datei von der Folie.“ |
+| 0:40 | `frontend/src/tasks.ts` → Stift → `80` zu `8` | „Jemand ändert die Titel-Regel, ohne an die Tests zu denken.“ |
+| 1:10 | *Commit changes…* → neuer Branch `demo-live` → *Propose changes* → *Create pull request* | „Achtet unten auf die Checks.“ |
+| 1:40 | *Details* → Workflow-Graph | „Drei Jobs gleichzeitig, Docker übersprungen, weil kein main.“ |
+| 2:30 | Frontend-Job rot → Step „Unit-Tests (Vitest)“ aufklappen | „Der Fehler wird gefunden, bevor er in main landet.“ |
+| 3:15 | Tab 3 → Secrets-Demo → *Run workflow* → Lauf öffnen | „Zweites Thema: Secrets.“ |
+| 3:45 | Step „Secret (wird im Log maskiert)“ → `***` | „Im Log nur Sternchen.“ |
+| 4:15 | Repo → *Packages* → Image | „So sieht das Ergebnis auf main aus.“ |
+| 4:45 | Zurück zu PowerPoint | „Damit zurück zu euch.“ |
 
-## Falls etwas schiefgeht
+## Plan B
 
-- **Runner startet nicht / GitHub langsam:** auf einen bereits abgeschlossenen roten Lauf (vorher einmal erzeugen!) und den grünen Lauf auf `main` wechseln.
-- **Kein Internet:** Backup-Screenshots zeigen.
-- **Zeit knapp:** Secrets-Demo weglassen, direkt zu Packages.
+- Check bei 2:30 noch nicht fertig → Tab 2 (Backup-PR, schon rot).
+- Secrets-Demo hängt → Lauf vom Vortag öffnen.
+- Kein Internet → Screenshots.
 
-Nach dem Vortrag den PR schließen (nicht mergen).
+Danach beide PRs schließen, **nicht mergen**.

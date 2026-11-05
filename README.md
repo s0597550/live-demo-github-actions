@@ -36,25 +36,15 @@ Manuell startbar (`workflow_dispatch`). Zeigt den Unterschied zwischen Eingaben 
 
 Öffnet wöchentlich Pull Requests, wenn es neue Versionen der Actions, npm- oder Maven-Pakete gibt.
 
-## Einrichtung (einmalig)
+## Einrichtung (einmalig, ohne Terminal)
 
-1. **Lockfile erzeugen** (wird von `npm ci` und vom Cache benötigt):
-   ```bash
-   cd frontend
-   npm install
-   ```
-   Danach `frontend/package-lock.json` mit committen.
-2. Repository auf GitHub anlegen (öffentlich = unbegrenzte Actions-Minuten) und pushen:
-   ```bash
-   git add .
-   git commit -m "Initial commit"
-   git remote add origin https://github.com/<user>/kbe-github-actions-demo.git
-   git push -u origin main
-   ```
-3. Für die Secrets-Demo unter **Settings → Secrets and variables → Actions** anlegen:
+1. Ordner mit **GitHub Desktop** öffnen: *File → Add local repository…*
+2. **Publish repository** – Haken bei „Keep this code private“ entfernen (öffentlich = kostenlose Actions-Minuten).
+3. Auf github.com unter **Actions** prüfen, dass der Workflow „CI“ grün durchläuft.
+4. Unter **Settings → Secrets and variables → Actions** anlegen:
    - Secret `DEMO_API_KEY` (beliebiger Wert)
    - Variable `DEPLOY_TARGET` (z. B. `staging`)
-4. Optional: **Settings → Branches → Branch protection** für `main` mit „Require status checks to pass" (Checks: `Frontend (Node 24)`, `Backend (Java 21)`).
+5. Optional: **Settings → Branches** für `main` „Require status checks to pass“ aktivieren.
 
 ## Lokal starten
 
@@ -71,6 +61,6 @@ cd frontend && npm run dev
 ## Lokal dieselben Prüfungen wie die CI ausführen
 
 ```bash
-cd frontend && npm ci && npm run lint && npm test && npm run build
+cd frontend && npm install && npm run lint && npm test && npm run build
 cd backend  && mvn verify
 ```
