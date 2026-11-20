@@ -75,7 +75,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: JDK einrichten (mit Maven-Cache)
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
