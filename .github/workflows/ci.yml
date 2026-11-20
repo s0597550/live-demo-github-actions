@@ -93,7 +93,56 @@ jobs:
           path: backend/target/surefire-reports
           retention-days: 7
 
-  # ── Job 3: Docker-Images (nur wenn 1 + 2 grün, nur auf main) ─
+  # ── Job 3: Website auf GitHub Pages (nur wenn Frontend grün, nur auf main)
+  pages:
+    name: Website → GitHub Pages
+    needs: frontend
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write    # Website veröffentlichen
+      id-token: write # Nachweis gegenüber GitHub Pages, dass dieser Lauf echt ist
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v7
+
+      - name: Node.js einrichten (mit npm-Cache)
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package.json
+
+      - name: Abhängigkeiten installieren
+        run: npm install
+
+      - name: Website bauen (mit Build-Infos)
+        run: npm run build -- --base=/${{ github.event.repository.name }}/
+        env:
+          VITE_BUILD_RUN: ${{ github.run_number }}
+          VITE_BUILD_SHA: ${{ github.sha }}
+          VITE_BUILD_TIME: ${{ github.event.head_commit.timestamp }}
+
+      - name: GitHub Pages vorbereiten
+        uses: actions/configure-pages@v6
+
+      - name: Website hochladen
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: frontend/dist
+
+      - name: Website veröffentlichen
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+  # ── Job 4: Docker-Images (nur wenn 1 + 2 grün, nur auf main) ─
   docker:
     name: Docker-Images → GHCR
     needs: [frontend, backend]

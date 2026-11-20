@@ -4,6 +4,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+# Im Container spricht das Frontend mit dem Quarkus-Backend
+ARG VITE_API_URL=http://localhost:8080
+ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # Stufe 2: statische Dateien mit nginx ausliefern
