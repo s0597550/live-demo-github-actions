@@ -8,5 +8,5 @@ export const SITE = {
   title: 'KBE Task-Board',
   subtitle: 'Gebaut, getestet und veröffentlicht von GitHub Actions',
   // Akzentfarbe der Website, z. B. '#2da44e' (grün), '#8250df' (lila), '#cf222e' (rot)
-  accent: '#8250df',
+  accent: '#2da44e',
 }
