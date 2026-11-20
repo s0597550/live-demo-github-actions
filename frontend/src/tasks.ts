@@ -15,7 +15,7 @@ const STORAGE_KEY = 'kbe-tasks'
 /** Clientseitige Vorprüfung – die verbindliche Validierung macht das Backend. */
 export function isValidTitle(title: string): boolean {
   const trimmed = title.trim()
-  return trimmed.length > 0 && trimmed.length <= 80
+  return trimmed.length > 0 && trimmed.length <= 8
 }
 
 export function countOpen(tasks: Task[]): number {
