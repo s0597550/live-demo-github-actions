@@ -1,6 +1,7 @@
 # ─────────────────────────────────────────────────────────────
 # LIVE-DEMO: Das Publikum steuert die Pipeline.
-# Jemand öffnet ein Issue („Hallo von Lisa“) → ein Bot antwortet →
+# Jemand scannt den QR-Code und schickt seinen Namen (über den Google-Helfer)
+# ODER öffnet ein Issue („Hallo von Lisa“) → ein Bot antwortet →
 # der Gruß wird ins Repo geschrieben → Tests → neue Website ist live.
 # Plan B: Actions → "Publikum" → "Run workflow" (ohne Issue).
 # ─────────────────────────────────────────────────────────────
@@ -9,6 +10,8 @@ name: Publikum
 on:
   issues:
     types: [opened]
+  repository_dispatch: # vom Google-Helfer (QR-Code → Website → Name senden)
+    types: [gruss]
   workflow_dispatch:
     inputs:
       gruss:
@@ -50,14 +53,14 @@ jobs:
       # Umgebungsvariable übergeben, nie direkt in den Befehl eingesetzt.
       - name: Gruß eintragen und committen
         env:
-          ISSUE_TITLE: ${{ github.event.issue.title || inputs.gruss }}
-          ISSUE_USER: ${{ github.event.issue.user.login || github.actor }}
+          ISSUE_TITLE: ${{ github.event.issue.title || github.event.client_payload.name || inputs.gruss }}
+          ISSUE_USER: ${{ github.event.issue.user.login || (github.event_name == 'repository_dispatch' && 'gast') || github.actor }}
           ISSUE_NUMBER: ${{ github.event.issue.number || 0 }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # Mehrere Issues gleichzeitig? Dann neu holen und nochmal versuchen.
-          for attempt in 1 2 3 4 5 6; do
+          for attempt in $(seq 1 20); do
             git fetch -q origin main
             git reset -q --hard origin/main
             node .github/scripts/add-greeting.mts
@@ -66,7 +69,7 @@ jobs:
             git commit -q -m "Gruß von @$ISSUE_USER (Issue #$ISSUE_NUMBER)"
             if git push -q origin HEAD:main; then exit 0; fi
             echo "Push-Konflikt (Versuch $attempt) – nochmal"
-            sleep $((RANDOM % 4 + 1))
+            sleep $((RANDOM % 6 + 1))
           done
           exit 1
 
@@ -113,11 +116,14 @@ jobs:
         env:
           NUMBER: ${{ github.event.issue.number }}
           AUTHOR: ${{ github.event.issue.user.login || github.actor }}
+          EVENT: ${{ github.event_name }}
         run: |
           {
             echo "VITE_BUILD_SHA=$(git rev-parse HEAD)"
             echo "VITE_BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            if [ -n "$NUMBER" ]; then
+            if [ "$EVENT" = "repository_dispatch" ]; then
+              echo "VITE_BUILD_LABEL=Gruß per QR-Code"
+            elif [ -n "$NUMBER" ]; then
               echo "VITE_BUILD_LABEL=Issue #$NUMBER von @$AUTHOR"
             else
               echo "VITE_BUILD_LABEL=Gruß von @$AUTHOR"

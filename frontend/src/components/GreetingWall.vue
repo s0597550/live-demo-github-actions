@@ -1,7 +1,25 @@
 <script setup lang="ts">
-import type { Greeting } from '../guestbook'
+import { ref } from 'vue'
+import { cleanGreeting, type Greeting } from '../guestbook'
 
-defineProps<{ greetings: Greeting[]; issueUrl: string }>()
+const props = defineProps<{ greetings: Greeting[]; sendUrl: string; issueUrl: string }>()
+
+const name = ref('')
+const state = ref<'idle' | 'sending' | 'sent' | 'error'>('idle')
+
+async function send() {
+  const clean = cleanGreeting(name.value)
+  if (!clean) return
+  state.value = 'sending'
+  try {
+    // "no-cors": Google antwortet ohne CORS-Freigabe – ankommen tut die Nachricht trotzdem
+    await fetch(props.sendUrl, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ name: clean }) })
+    state.value = 'sent'
+    name.value = ''
+  } catch {
+    state.value = 'error'
+  }
+}
 
 function ago(time: string): string {
   const min = Math.round((Date.now() - new Date(time).getTime()) / 60000)
@@ -13,22 +31,60 @@ function ago(time: string): string {
 function isFresh(time: string): boolean {
   return Date.now() - new Date(time).getTime() < 5 * 60000
 }
+
+function who(g: Greeting): string {
+  if (g.user === 'gast') return 'per QR-Code'
+  return g.issue ? `@${g.user} · Issue #${g.issue}` : `@${g.user}`
+}
 </script>
 
 <template>
   <section class="wall">
-    <div class="wall-head">
-      <h2>👋 Grüße aus dem Hörsaal <span class="count">{{ greetings.length }}</span></h2>
-      <a
-        class="cta"
-        :href="issueUrl"
-        target="_blank"
-        rel="noopener"
-      >Gruß senden</a>
-    </div>
-    <p class="how">
-      Tippe auf „Gruß senden“, schreib deinen Namen und tippe auf „Create“. Ein Bot beantwortet dein Issue,
-      die Pipeline testet und veröffentlicht die Website neu, und in ca. einer Minute steht dein Gruß hier.
+    <h2>👋 Grüße aus dem Hörsaal <span class="count">{{ greetings.length }}</span></h2>
+
+    <form
+      v-if="sendUrl"
+      class="send"
+      @submit.prevent="send"
+    >
+      <input
+        v-model="name"
+        maxlength="50"
+        placeholder="Dein Name (+ Farbe: rot, blau, lila …)"
+        :disabled="state === 'sending'"
+      >
+      <button
+        type="submit"
+        :disabled="state === 'sending' || !name.trim()"
+      >
+        {{ state === 'sending' ? 'Sende …' : 'Senden' }}
+      </button>
+    </form>
+    <a
+      v-else
+      class="cta"
+      :href="issueUrl"
+      target="_blank"
+      rel="noopener"
+    >Gruß senden</a>
+
+    <p
+      v-if="state === 'sent'"
+      class="ok"
+    >
+      ✅ Angekommen! Die Pipeline testet und veröffentlicht die Website gerade neu – in ca. einer Minute steht dein Name hier.
+    </p>
+    <p
+      v-else-if="state === 'error'"
+      class="err"
+    >
+      Senden hat nicht geklappt – bitte nochmal versuchen.
+    </p>
+    <p
+      v-else
+      class="how"
+    >
+      Namen eintippen, „Senden“ drücken – GitHub Actions testet, baut und veröffentlicht die Website neu.
     </p>
 
     <p
@@ -45,7 +101,7 @@ function isFresh(time: string): boolean {
         :style="{ '--c': g.color }"
       >
         <span class="name">{{ g.name }}</span>
-        <span class="meta">@{{ g.user }}<template v-if="g.issue"> · Issue #{{ g.issue }}</template> · {{ ago(g.time) }}</span>
+        <span class="meta">{{ who(g) }} · {{ ago(g.time) }}</span>
       </li>
     </ul>
   </section>
@@ -59,15 +115,8 @@ function isFresh(time: string): boolean {
   padding: 1.25rem;
   margin-bottom: 1.5rem;
 }
-.wall-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
 h2 {
-  margin: 0;
+  margin: 0 0 1rem;
   font-size: 1.3rem;
 }
 .count {
@@ -81,7 +130,24 @@ h2 {
   text-align: center;
   vertical-align: middle;
 }
+.send {
+  display: flex;
+  gap: 0.5rem;
+}
+.send input {
+  flex: 1;
+  min-width: 0;
+  font-size: 1.05rem;
+}
+.send button {
+  font-size: 1.05rem;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
 .cta {
+  display: inline-block;
   padding: 0.6rem 1.1rem;
   border-radius: 8px;
   background: var(--accent);
@@ -89,10 +155,21 @@ h2 {
   font-weight: 700;
   text-decoration: none;
 }
-.how {
+.how,
+.ok,
+.err {
   margin: 0.75rem 0 1rem;
-  color: #8b949e;
   font-size: 0.9rem;
+}
+.how {
+  color: #8b949e;
+}
+.ok {
+  color: #3fb950;
+  font-weight: 600;
+}
+.err {
+  color: #f85149;
 }
 .empty {
   color: #8b949e;

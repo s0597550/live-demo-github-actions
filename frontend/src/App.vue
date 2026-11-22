@@ -113,6 +113,7 @@ onUnmounted(() => {
 
     <GreetingWall
       :greetings="greetings"
+      :send-url="SITE.grussUrl"
       :issue-url="issueUrl"
     />
 
