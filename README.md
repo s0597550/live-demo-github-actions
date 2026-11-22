@@ -32,6 +32,19 @@ Gezeigte Konzepte: Trigger (`on`), Jobs und Steps, `needs`, Matrix, Caching übe
 
 **Live-Website:** `https://<dein-user>.github.io/kbe-github-actions-demo/` – zeigt die Build-Nummer des Laufs, der sie veröffentlicht hat. Titel und Farbe stehen in `frontend/src/config.ts`.
 
+### `publikum.yml` – Das Publikum steuert die Pipeline
+
+```
+Issue „Hallo von Lisa“ (vom Handy)
+        │
+        ├── gruss    Bot antwortet im Issue → Gruß in frontend/src/guestbook.json → Commit auf main
+        └── website  (needs: gruss) Tests → Build → GitHub Pages → Bot: „✅ Live!“ + Issue schließen
+```
+
+Auf der Website tippt man auf **„Gruß senden“** und landet auf einem vorausgefüllten Issue. Die Website prüft alle 8 Sekunden `version.json` und lädt sich selbst neu, sobald eine neue Version live ist – der Beamer muss nicht angefasst werden.
+Sicherheit: Der Issue-Titel ist fremde Eingabe. Er wird nur per Umgebungsvariable übergeben (keine Script-Injection), gekürzt und bereinigt (`frontend/src/guestbook.ts`, getestet in `guestbook.spec.ts`).
+Plan B ohne Issue: *Actions → Publikum → Run workflow*. Einen unerwünschten Gruß entfernt man, indem man ihn aus `guestbook.json` löscht.
+
 ### `secrets-demo.yml` – Secrets und Variablen
 
 Manuell startbar (`workflow_dispatch`). Zeigt den Unterschied zwischen Eingaben (`inputs`), Variablen (`vars`) und Secrets (`secrets`) – das Secret erscheint im Log nur als `***`.

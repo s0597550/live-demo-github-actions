@@ -1,8 +1,17 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
+import GreetingWall from './components/GreetingWall.vue'
 import TaskList from './components/TaskList.vue'
 import { SITE } from './config'
+import greetingData from './guestbook.json'
+import type { Greeting } from './guestbook'
 import { createTask, fetchTasks, isValidTitle, type Task } from './tasks'
+
+const greetings = greetingData as Greeting[]
+const repo = (import.meta.env.VITE_REPO as string | undefined) || 's0597550/live-demo-github-actions'
+const issueUrl =
+  `https://github.com/${repo}/issues/new?title=${encodeURIComponent('Hallo von ')}` +
+  `&body=${encodeURIComponent('Schreib oben deinen Namen hin und tippe auf „Create“. Farbwunsch? Schreib rot, blau, lila, pink, orange oder gelb in den Titel.')}`
 
 const tasks = ref<Task[]>([])
 const title = ref('')
@@ -10,9 +19,11 @@ const error = ref('')
 
 // Werden von der Pipeline beim Build gesetzt (siehe .github/workflows/ci.yml)
 const env = import.meta.env
+const fullSha = env.VITE_BUILD_SHA as string | undefined
 const build = {
   run: env.VITE_BUILD_RUN as string | undefined,
-  sha: (env.VITE_BUILD_SHA as string | undefined)?.slice(0, 7),
+  label: (env.VITE_BUILD_LABEL as string | undefined) || `Build #${env.VITE_BUILD_RUN}`,
+  sha: fullSha?.slice(0, 7),
   time: env.VITE_BUILD_TIME as string | undefined,
 }
 const buildTime = build.time
@@ -42,7 +53,33 @@ async function add() {
   }
 }
 
-onMounted(load)
+// Auto-Update: Die veröffentlichte Website fragt alle 8 Sekunden, ob die Pipeline
+// eine neuere Version ausgeliefert hat – und lädt sich dann selbst neu.
+const updating = ref(false)
+let timer: ReturnType<typeof setInterval> | undefined
+
+async function checkForUpdate() {
+  try {
+    const res = await fetch(`${import.meta.env.BASE_URL}version.json?t=${Date.now()}`, { cache: 'no-store' })
+    if (!res.ok) return
+    const { sha } = (await res.json()) as { sha?: string }
+    if (sha && sha !== fullSha) {
+      updating.value = true
+      if (timer) clearInterval(timer)
+      setTimeout(() => location.replace(`${location.pathname}?v=${sha.slice(0, 7)}`), 1500)
+    }
+  } catch {
+    // offline – beim nächsten Mal wieder versuchen
+  }
+}
+
+onMounted(() => {
+  load()
+  if (fullSha) timer = setInterval(checkForUpdate, 8000)
+})
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+})
 </script>
 
 <template>
@@ -57,7 +94,7 @@ onMounted(load)
         class="build"
       >
         <span class="dot" />
-        Live aus der Pipeline · Build #{{ build.run }} · {{ build.sha }} · {{ buildTime }}
+        Live aus der Pipeline · {{ build.label }} · {{ build.sha }} · {{ buildTime }}
       </p>
       <p
         v-else
@@ -66,6 +103,18 @@ onMounted(load)
         Lokale Version
       </p>
     </header>
+
+    <div
+      v-if="updating"
+      class="update"
+    >
+      🚀 Die Pipeline hat eine neue Version veröffentlicht – wird geladen …
+    </div>
+
+    <GreetingWall
+      :greetings="greetings"
+      :issue-url="issueUrl"
+    />
 
     <form @submit.prevent="add">
       <input
@@ -160,5 +209,18 @@ button {
 }
 .error {
   color: #f85149;
+}
+.update {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  padding: 0.8rem 1.2rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 8px 30px rgb(0 0 0 / 50%);
+  z-index: 10;
 }
 </style>

@@ -99,6 +99,9 @@ jobs:
     needs: frontend
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    concurrency:
+      group: pages # nie zwei Deploys gleichzeitig (siehe auch publikum.yml)
+      cancel-in-progress: false
     permissions:
       contents: read
       pages: write    # Website veröffentlichen
@@ -129,6 +132,10 @@ jobs:
           VITE_BUILD_RUN: ${{ github.run_number }}
           VITE_BUILD_SHA: ${{ github.sha }}
           VITE_BUILD_TIME: ${{ github.event.head_commit.timestamp }}
+          VITE_REPO: ${{ github.repository }}
+
+      - name: version.json für das Auto-Update schreiben
+        run: echo '{"sha":"${{ github.sha }}"}' > dist/version.json
 
       - name: GitHub Pages vorbereiten
         uses: actions/configure-pages@v6
