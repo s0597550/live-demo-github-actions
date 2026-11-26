@@ -45,7 +45,7 @@ jobs:
           gh issue comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --body "👋 Danke @$AUTHOR! Ich bin ein Bot (GitHub Actions). Die Pipeline testet und veröffentlicht die Website gerade neu – in ca. einer Minute steht dein Gruß hier: $SITE"
 
       - name: Node.js einrichten
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -101,7 +101,7 @@ jobs:
           ref: main
 
       - name: Node.js einrichten (mit npm-Cache)
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
