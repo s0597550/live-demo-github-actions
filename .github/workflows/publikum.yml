@@ -84,12 +84,13 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
+      actions: read # Artefakt der Website finden
       pages: write
       id-token: write
       issues: write # "Live!"-Antwort im Issue
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment2.outputs.page_url || steps.deployment3.outputs.page_url }}
     defaults:
       run:
         working-directory: frontend
@@ -142,20 +143,50 @@ jobs:
       - name: GitHub Pages vorbereiten
         uses: actions/configure-pages@v6
 
+      # Eindeutiger Name pro Versuch – sonst findet GitHub bei "Re-run" zwei Artefakte
       - name: Website hochladen
         uses: actions/upload-pages-artifact@v5
         with:
           path: frontend/dist
+          name: website-${{ github.run_id }}-${{ github.run_attempt }}
 
+      # GitHub hakt manchmal kurz ("No artifacts named github-pages were found").
+      # Dann nicht rot werden, sondern nach kurzer Pause erneut versuchen.
       - name: Website veröffentlichen
         id: deployment
+        continue-on-error: true
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: website-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Kurz warten (GitHub-Aussetzer)
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 15
+
+      - name: Website veröffentlichen (2. Versuch)
+        id: deployment2
+        if: steps.deployment.outcome == 'failure'
+        continue-on-error: true
+        uses: actions/deploy-pages@v5
+        with:
+          artifact_name: website-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Nochmal warten
+        if: steps.deployment.outcome == 'failure' && steps.deployment2.outcome == 'failure'
+        run: sleep 30
+
+      - name: Website veröffentlichen (3. Versuch)
+        id: deployment3
+        if: steps.deployment.outcome == 'failure' && steps.deployment2.outcome == 'failure'
+        uses: actions/deploy-pages@v5
+        with:
+          artifact_name: website-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Bot meldet "live" und schließt das Issue
         if: github.event_name == 'issues'
         env:
           GH_TOKEN: ${{ github.token }}
           NUMBER: ${{ github.event.issue.number }}
-          SITE: ${{ steps.deployment.outputs.page_url }}
+          SITE: ${{ steps.deployment.outputs.page_url || steps.deployment2.outputs.page_url || steps.deployment3.outputs.page_url }}
         run: |
           gh issue close "$NUMBER" --repo "$GITHUB_REPOSITORY" --comment "✅ Live! Dein Gruß ist jetzt auf der Website: $SITE – getestet, gebaut und veröffentlicht von GitHub Actions."
