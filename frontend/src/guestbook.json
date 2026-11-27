@@ -1,5 +1,12 @@
 [
   {
+    "name": "Test 3",
+    "user": "gast",
+    "issue": 0,
+    "time": "2026-11-27T09:02:22.231Z",
+    "color": "#d29922"
+  },
+  {
     "name": "Test 2 blau",
     "user": "gast",
     "issue": 0,
